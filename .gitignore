@@ -53,6 +53,7 @@ web/build/
 **/google-services.json
 **/GoogleService-Info.plist
 app/lib/firebase_options.dart
+app/assets/env/app.env
 .env
 .env*
 
