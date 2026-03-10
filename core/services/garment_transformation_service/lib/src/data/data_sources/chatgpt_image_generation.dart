@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:garment_transformation_service/garment_transformation_service.dart';
 import 'package:mime/mime.dart';
 
@@ -15,9 +16,30 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
 
   final String? apiKey;
   final String baseUrl;
+  static bool _dotenvLoaded = false;
+
+  Future<void> _ensureDotEnvLoaded() async {
+    if (_dotenvLoaded) return;
+    try {
+      await dotenv.load(fileName: 'assets/env/app.env');
+      _dotenvLoaded = true;
+    } catch (_) {
+      // Keep going; missing dotenv will be handled by _resolvedApiKey null checks.
+    }
+  }
+
+  String _truncate(String value, {int max = 600}) {
+    if (value.length <= max) return value;
+    return '${value.substring(0, max)}…';
+  }
+
+  String _keySuffix(String key) {
+    if (key.length <= 6) return '***';
+    return '***${key.substring(key.length - 6)}';
+  }
 
   String? get _resolvedApiKey {
-    final key = apiKey ?? Platform.environment['OPENAI_API_KEY'];
+    final key = apiKey ?? dotenv.env['OPENAI_API_KEY'];
     if (key == null || key.trim().isEmpty) {
       return null;
     }
@@ -28,6 +50,7 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
   Future<GarmentAnalysisModel> analyseGarment({
     required String originalGarmentImage,
   }) async {
+    await _ensureDotEnvLoaded();
     final file = File(originalGarmentImage);
     if (!await file.exists()) {
       print(
@@ -48,6 +71,10 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
       final bytes = await file.readAsBytes();
       final mimeType = lookupMimeType(originalGarmentImage) ?? 'image/jpeg';
       final base64Image = base64Encode(bytes);
+      print(
+        '[ChatGptImageGeneration.analyseGarment] Starting request '
+        'model=gpt-4o-mini, mime=$mimeType, bytes=${bytes.length}, key=${_keySuffix(key)}',
+      );
 
       final payload = {
         'model': 'gpt-4o-mini',
@@ -79,6 +106,11 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
         payload: payload,
       );
 
+      print(
+        '[ChatGptImageGeneration.analyseGarment] HTTP ${response.statusCode} '
+        'body=${_truncate(response.body)}',
+      );
+
       if (response.statusCode < 200 || response.statusCode >= 300) {
         print(
           '[ChatGptImageGeneration.analyseGarment] OpenAI call failed '
@@ -89,10 +121,13 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
 
       final decoded = jsonDecode(response.body) as Map<String, dynamic>;
       final choices = decoded['choices'] as List<dynamic>?;
-      final content = choices?.isNotEmpty == true
-          ? (choices!.first as Map<String, dynamic>)['message']?['content']
-                as String?
-          : null;
+      String? content;
+      if (choices != null && choices.isNotEmpty) {
+        final first = choices.first as Map<String, dynamic>;
+        final message = first['message'] as Map<String, dynamic>?;
+        content = message?['content'] as String?;
+      }
+
 
       if (content == null || content.isEmpty) {
         print(
@@ -158,6 +193,7 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
     required GarmentIdeationModel garmentIdeas,
     required String originalGarmentImage,
   }) async {
+    await _ensureDotEnvLoaded();
     if (garmentIdeas.variations.isEmpty) {
       return GarmentTransformationCollection.empty();
     }
@@ -182,6 +218,10 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
 
     try {
       final variations = garmentIdeas.variations.take(3).toList();
+      print(
+        '[ChatGptImageGeneration.generateGarmentTransformations] Starting batch '
+        'count=${variations.length}, model=dall-e-3, key=${_keySuffix(key)}',
+      );
 
       final futures = variations.map((idea) async {
         final prompt = StringBuffer()
@@ -203,10 +243,19 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
         };
 
         try {
+          print(
+            '[ChatGptImageGeneration.generateGarmentTransformations] Requesting image '
+            'for idea="${idea.name}" prompt=${_truncate(prompt.toString(), max: 260)}',
+          );
           final response = await _postJson(
             path: '/images/generations',
             apiKey: key,
             payload: payload,
+          );
+
+          print(
+            '[ChatGptImageGeneration.generateGarmentTransformations] idea="${idea.name}" '
+            'HTTP ${response.statusCode} body=${_truncate(response.body)}',
           );
 
           if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -227,6 +276,18 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
           final imageUrl = data != null && data.isNotEmpty
               ? (data.first as Map<String, dynamic>)['url'] as String? ?? ''
               : '';
+
+          if (imageUrl.isEmpty) {
+            print(
+              '[ChatGptImageGeneration.generateGarmentTransformations] '
+              'No image URL returned for idea "${idea.name}".',
+            );
+          } else {
+            print(
+              '[ChatGptImageGeneration.generateGarmentTransformations] '
+              'Received URL for "${idea.name}": ${_truncate(imageUrl, max: 180)}',
+            );
+          }
 
           return GarmentTransformationModel(
             image: imageUrl,

@@ -52,5 +52,7 @@ web/build/
 ### Firebase / secrets (adjust as needed)
 **/google-services.json
 **/GoogleService-Info.plist
+app/lib/firebase_options.dart
+.env
 .env*
 

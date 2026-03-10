@@ -26,6 +26,7 @@ dependencies:
   garment_transformation_service:
     path: ../core/services/garment_transformation_service
   firebase_core: ^4.5.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -38,4 +39,6 @@ dev_dependencies:
 flutter:
 
   uses-material-design: true
+  assets:
+    - assets/env/app.env
 
