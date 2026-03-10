@@ -68,11 +68,12 @@ class _ResultsPageState extends State<ResultsPage> {
               },
             ),
             Positioned(
-              left: 0,
-              right: 0,
               bottom: 40,
+              
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.max,
+                spacing: 12,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   _ResultsIconButton(
                     icon: Icons.favorite_border,
@@ -80,16 +81,16 @@ class _ResultsPageState extends State<ResultsPage> {
                       // TODO: hook up like interaction
                     },
                   ),
-                  const SizedBox(width: 16),
+                
                   _ResultsPrimaryButton(
-                    label: 'Done',
+                    label: 'Request Remake',
                     onTap: () {
                       context.read<GarmentGeneratorBloc>().add(
                             ClearUploadedGarmentImageEvent(),
                           );
                     },
                   ),
-                  const SizedBox(width: 16),
+             
                   _ResultsIconButton(
                     icon: Icons.ios_share,
                     onTap: () {

@@ -83,6 +83,12 @@ class _FadezCarouselState extends State<FadezCarousel>
   int get _effectiveCardCount =>
       math.max(widget.imageUrls.length, _kMaxVisible + 1);
 
+  // Render only as many back cards as real outputs.
+  int get _visibleBackCount {
+    final backCount = widget.imageUrls.length - 1;
+    return backCount < _kMaxVisible ? backCount : _kMaxVisible;
+  }
+
   String _imageForOrderId(int id) {
     if (widget.imageUrls.isEmpty) return '';
     return widget.imageUrls[id % widget.imageUrls.length];
@@ -163,22 +169,21 @@ class _FadezCarouselState extends State<FadezCarousel>
       return const SizedBox.shrink();
     }
 
-    return RepaintBoundary(
-      child: ColoredBox(
-        color: widget.backgroundColor,
-        child: GestureDetector(
-          onVerticalDragUpdate: _onDragUpdate,
-          onVerticalDragEnd: _onDragEnd,
-          child: AnimatedBuilder(
-            animation: _exitCtrl,
-            builder: (context, _) {
-              final progress = _exitingCardId != null ? _exitCtrl.value : 1.0;
-              return Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
+    return ColoredBox(
+      color: widget.backgroundColor,
+      child: GestureDetector(
+        onVerticalDragUpdate: _onDragUpdate,
+        onVerticalDragEnd: _onDragEnd,
+        child: AnimatedBuilder(
+          animation: _exitCtrl,
+          builder: (context, _) {
+            final progress = _exitingCardId != null ? _exitCtrl.value : 1.0;
+            return Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
                   // Back cards (position 1+)
-                  for (int i = _kMaxVisible; i >= 1; i--)
+                  for (int i = _visibleBackCount; i >= 1; i--)
                     if (i < _order.length && _order[i] != _exitingCardId)
                       _FadezCard(
                         key: ValueKey(_order[i]),
@@ -214,58 +219,57 @@ class _FadezCarouselState extends State<FadezCarousel>
                       ),
                     ),
 
-                    if (_exitingCardId != null)
-                      SlideTransition(
-                        position: _exitSlide,
-                        child: FadeTransition(
-                          opacity: _exitFade,
-                          child: ScaleTransition(
-                            scale: _exitScale,
-                            child: AnimatedBuilder(
-                              animation: _fadeCtrl,
-                              builder: (context, child) {
-                                final t = _fadeCtrl.value;
-                                final blur = t * 10.0;
-                                final shadowOpacity = (t * 0.4).clamp(0.0, 0.4);
-                                final shadowBlur = t * 24.0;
-                                final shadowOffset = t * 12.0;
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(30),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: shadowOpacity,
-                                        ),
-                                        blurRadius: shadowBlur,
-                                        offset: Offset(0, shadowOffset),
+                  if (_exitingCardId != null)
+                    SlideTransition(
+                      position: _exitSlide,
+                      child: FadeTransition(
+                        opacity: _exitFade,
+                        child: ScaleTransition(
+                          scale: _exitScale,
+                          child: AnimatedBuilder(
+                            animation: _fadeCtrl,
+                            builder: (context, child) {
+                              final t = _fadeCtrl.value;
+                              final blur = t * 10.0;
+                              final shadowOpacity = (t * 0.4).clamp(0.0, 0.4);
+                              final shadowBlur = t * 24.0;
+                              final shadowOffset = t * 12.0;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: shadowOpacity,
                                       ),
-                                    ],
-                                  ),
-                                  child: ImageFiltered(
-                                    imageFilter: ImageFilter.blur(
-                                      sigmaX: blur,
-                                      sigmaY: blur,
+                                      blurRadius: shadowBlur,
+                                      offset: Offset(0, shadowOffset),
                                     ),
-                                    child: child,
+                                  ],
+                                ),
+                                child: ImageFiltered(
+                                  imageFilter: ImageFilter.blur(
+                                    sigmaX: blur,
+                                    sigmaY: blur,
                                   ),
-                                );
-                              },
-                              child: _FadezCard(
-                                key: ValueKey(_exitingCardId),
-                                stackPosition: 0,
-                                progress: 1.0,
-                                imageUrl: _imageForOrderId(_exitingCardId!),
-                              ),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _FadezCard(
+                              key: ValueKey(_exitingCardId),
+                              stackPosition: 0,
+                              progress: 1.0,
+                              imageUrl: _imageForOrderId(_exitingCardId!),
                             ),
                           ),
                         ),
                       ),
-                  ],
-                ),
-              );
-            },
-          ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

@@ -1,16 +1,60 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:garment_transformation_service/garment_transformation_service.dart';
 import 'package:mime/mime.dart';
 
 import '../../domain/schemas/garment_analysis_schema.dart';
-import '../../domain/schemas/garment_generation_schema.dart';
 import '../prompts/garment_transformation_prompt.dart';
 
 class GeminiImageGeneration implements GarmentTransformationDataSource {
   const GeminiImageGeneration();
+
+  Future<String> _persistGeneratedImage({
+    required Uint8List bytes,
+    required String ideaName,
+  }) async {
+    final safeName = ideaName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    final file = File(
+      '${Directory.systemTemp.path}/loom_gen_${safeName}_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
+
+  /// Normalizes an image URL returned by Gemini so that the UI can load it safely.
+  ///
+  /// - If [raw] is empty, returns an empty string.
+  /// - If [raw] looks like a plain filename (e.g. "image_0.png" with no scheme or
+  ///   leading slash), it is treated as an internal reference and returns empty.
+  /// - Otherwise returns the trimmed [raw] value unchanged.
+  String _normalizeImageUrl(String raw) {
+    if (raw.isEmpty) return '';
+    final trimmed = raw.trim();
+
+    final isNetwork =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    final isLocalAbsolute =
+        trimmed.startsWith('/') || trimmed.startsWith('file://');
+
+    if (!isNetwork && !isLocalAbsolute) {
+      // This is likely a bare filename like "image_0.png" which the current
+      // client cannot resolve.
+      print(
+        '[GeminiImageGeneration] Normalizing non-loadable image URL "$trimmed" '
+        'to an empty value',
+      );
+      return '';
+    }
+
+    return trimmed;
+  }
 
   @override
   Future<GarmentAnalysisModel> analyseGarment({
@@ -131,8 +175,10 @@ class GeminiImageGeneration implements GarmentTransformationDataSource {
       final model = FirebaseAI.googleAI().generativeModel(
         model: 'gemini-3-pro-image-preview',
         generationConfig: GenerationConfig(
-          responseMimeType: 'application/json',
-          responseSchema: garmentGenerationSchema,
+          responseModalities: [
+            ResponseModalities.text,
+            ResponseModalities.image,
+          ],
         ),
       );
 
@@ -154,6 +200,24 @@ class GeminiImageGeneration implements GarmentTransformationDataSource {
             ]),
           ]);
 
+          if (response.inlineDataParts.isNotEmpty) {
+            final generatedBytes = response.inlineDataParts.first.bytes;
+            final localImagePath = await _persistGeneratedImage(
+              bytes: generatedBytes,
+              ideaName: idea.name,
+            );
+            final descriptionFromText =
+                response.text?.trim().isNotEmpty == true
+                    ? response.text!.trim()
+                    : idea.description;
+
+            return GarmentTransformationModel(
+              image: localImagePath,
+              description: descriptionFromText,
+              imageURL: localImagePath,
+            );
+          }
+
           final rawText = response.text;
           if (rawText == null || rawText.isEmpty) {
             print(
@@ -163,20 +227,21 @@ class GeminiImageGeneration implements GarmentTransformationDataSource {
             return GarmentTransformationModel(
               image: '',
               description: idea.description,
-              imageURL: originalGarmentImage,
+              imageURL: '',
             );
           }
 
           try {
             final decoded = jsonDecode(rawText) as Map<String, dynamic>;
-            final imageUrl = decoded['image_url'] as String? ?? '';
+            final rawImageUrl = decoded['image_url'] as String? ?? '';
+            final imageUrl = _normalizeImageUrl(rawImageUrl);
             final imageDescription =
                 decoded['image_description'] as String? ?? idea.description;
 
             return GarmentTransformationModel(
               image: imageUrl,
               description: imageDescription,
-              imageURL: imageUrl.isNotEmpty ? imageUrl : originalGarmentImage,
+              imageURL: imageUrl,
             );
           } catch (e, st) {
             print(
@@ -190,7 +255,7 @@ class GeminiImageGeneration implements GarmentTransformationDataSource {
             return GarmentTransformationModel(
               image: '',
               description: idea.description,
-              imageURL: originalGarmentImage,
+              imageURL: '',
             );
           }
         } catch (e, st) {
@@ -201,7 +266,7 @@ class GeminiImageGeneration implements GarmentTransformationDataSource {
           return GarmentTransformationModel(
             image: '',
             description: idea.description,
-            imageURL: originalGarmentImage,
+            imageURL: '',
           );
         }
       }).toList();
