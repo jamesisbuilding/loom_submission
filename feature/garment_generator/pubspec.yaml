@@ -1,0 +1,41 @@
+name: garment_generator
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  cupertino_icons: ^1.0.8
+
+  design_system: 
+    path: ../../core/design_system/
+  flow_builder: ^0.1.0
+  delayed_display: ^2.0.0
+  flutter_bloc: ^9.1.1
+  image_picker: ^1.0.7
+  image_palette_service:
+    path: ../../core/services/image_palette_service
+  garment_transformation_service:
+    path: ../../core/services/garment_transformation_service
+  image_background_remover: ^2.0.0
+  
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^6.0.0
+
+
+flutter:
+
+  uses-material-design: true

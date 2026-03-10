@@ -1,0 +1,56 @@
+### Flutter / Dart / IDE
+.dart_tool/
+.packages
+pubspec.lock
+
+### Build outputs
+build/
+**/build/
+coverage/
+
+### Platform builds
+android/.gradle/
+android/.idea/
+android/local.properties
+android/**/captures/
+android/**/outputs/
+android/app/release/
+
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/build/
+
+macos/Flutter/ephemeral/
+macos/build/
+
+web/.dart_tool/
+web/build/
+
+### Xcode user data
+**/*.xcuserstate
+**/*.xcuserdatad/
+**/*.xccheckout
+**/*.moved-aside/
+
+### VS Code / IntelliJ / Xcode
+.vscode/
+.idea/
+*.iml
+
+### Logs / OS files
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+### Firebase / secrets (adjust as needed)
+**/google-services.json
+**/GoogleService-Info.plist
+.env*
+

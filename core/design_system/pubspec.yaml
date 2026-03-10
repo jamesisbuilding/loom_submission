@@ -1,0 +1,52 @@
+name: design_system
+description: "Design System for ReStitch, containing common widgets"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  cupertino_icons: ^1.0.8
+  liquid_glass_renderer: ^0.2.0-dev.4
+  flutter_spinkit: ^5.2.2
+  delayed_display: ^2.0.0
+  shimmer_animation: ^2.2.2+1
+  sensors_plus: ^6.1.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  fast_noise: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^6.0.0
+
+  flutter_gen_runner: ^5.7.0
+  build_runner: ^2.4.9
+
+
+flutter:
+
+  uses-material-design: true
+  assets:
+    - assets/icons/
+  shaders:
+    - shaders/gradient.frag
+    - shaders/transparent_grain.frag
+
+flutter_gen:
+  output: lib/gen/
+  line_length: 80
+  integrations:
+    flutter_svg: false
+  assets:
+    enabled: true

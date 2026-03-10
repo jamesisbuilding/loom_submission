@@ -1,0 +1,20 @@
+name: garment_transformation_service
+description: "Garment analysis and transformation service for loom_test."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  firebase_ai: ^3.9.0
+  flutter:
+    sdk: flutter
+  mime: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
