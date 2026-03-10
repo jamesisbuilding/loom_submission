@@ -12,3 +12,4 @@ export 'src/data/garment_transformation_repository_impl.dart';
 export 'src/data/data_sources/gemini_image_generation.dart';
 export 'src/data/data_sources/dummy_image_generation.dart';
 
+export 'src/data/data_sources/chatgpt_image_generation.dart';
