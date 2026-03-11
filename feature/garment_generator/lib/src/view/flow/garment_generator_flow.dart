@@ -18,7 +18,7 @@ class GarmentGeneratorFlow extends StatelessWidget {
     return BlocProvider(
       create: (_) => GarmentGeneratorBloc(
         transformationRepository: GarmentTransformationRepositoryImpl(
-          dataSource: const ChatGptImageGeneration(),
+          dataSource: const GeminiImageGeneration(),
         ),
       ),
       child: BlocBuilder<GarmentGeneratorBloc, GarmentGeneratorState>(
