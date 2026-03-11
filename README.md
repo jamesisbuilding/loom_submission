@@ -144,3 +144,8 @@ The full flow I would like to implement
 6. A feedback and annotation tool allowing the designer to pin notes or questions on redesign images or methodology steps
 7. Option for direct chat or consultation with the client for clarifications or custom requests
 8. Quick access to the client’s submitted preferences, measurements, and inspiration uploaded in the ideation stage
+
+
+### Additional Design Notes
+If I were to do a full redesign of this app for production, to achieve this luxury look I would lean more into designs from [cosmos](https://www.cosmos.so/home) 
+and implement clearer animations from [60fps](https://60fps.design/)
