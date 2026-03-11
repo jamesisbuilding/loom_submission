@@ -118,7 +118,7 @@ them meaningful insights into how it can be transformed.
 
 
 However, I have drafted out a large flow I would like to put into the app - this weavy implementation shows a more fleshed-out approach which can easily be ported over to flutter. 
-[weavy flow](https://app.weavy.ai/flow/5QUfbeLoSwtwASNyLNGCrK)
+[weavy flow](https://app.weavy.ai/flow/5QUfbeLoSwtwASNyLNGCrK) (I particularly like the packaging)
 
 The full flow I would like to implement 
 
