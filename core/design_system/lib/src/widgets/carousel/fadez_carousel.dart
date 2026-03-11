@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:design_system/design_system.dart';
 import 'package:design_system/src/widgets/images/cached_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -236,7 +237,7 @@ class _FadezCarouselState extends State<FadezCarousel>
                               final shadowOffset = t * 12.0;
                               return Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(30),
+                                  borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(
@@ -301,29 +302,43 @@ class _FadezCard extends StatelessWidget {
       value.startsWith('file://') ? value.replaceFirst('file://', '') : value;
 
   Widget _buildImage() {
+    Widget image;
     if (_isNetworkImage(imageUrl)) {
-      return CachedImage(
+      image = CachedImage(
         url: imageUrl,
         fit: BoxFit.cover,
         width: 300,
         height: 300,
       );
-    }
-
-    if (_isLocalFileImage(imageUrl)) {
-      return Image.file(
+    } else if (_isLocalFileImage(imageUrl)) {
+      image = Image.file(
         File(_normalizeLocalPath(imageUrl)),
+        fit: BoxFit.cover,
+        width: 300,
+        height: 300,
+      );
+    } else {
+      image = Image.asset(
+        imageUrl,
         fit: BoxFit.cover,
         width: 300,
         height: 300,
       );
     }
 
-    return Image.asset(
-      imageUrl,
-      fit: BoxFit.cover,
-      width: 300,
-      height: 300,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        image,
+        Positioned(
+          right: 10,
+          bottom: 10,
+          child: Assets.logo.loomLogo.designImage(
+            width: 38,
+            height: 38,
+          ),
+        ),
+      ],
     );
   }
 
@@ -338,17 +353,20 @@ class _FadezCard extends StatelessWidget {
     final slideY = effectivePos * _slidePerPos;
     final opacity = (_kMaxVisible.toDouble() - effectivePos).clamp(0.0, 1.0);
 
-    Widget card = Container(
-      height: 300,
-      width: 300,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border.all(color: Colors.white, width: 5),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(25),
-        child: _buildImage(),
+    Widget card = Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Container(
+        height: 500,
+        width: MediaQuery.sizeOf(context).width,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          border: Border.all(color: Colors.white, width: 2),
+          borderRadius: BorderRadius.circular(0),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(0),
+          child: _buildImage(),
+        ),
       ),
     );
 

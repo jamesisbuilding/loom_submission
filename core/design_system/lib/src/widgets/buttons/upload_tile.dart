@@ -29,7 +29,7 @@ class _UploadTileState extends State<UploadTile> with AnimatedPressMixin {
   Widget build(BuildContext context) {
     return buildPressable(
       child: ClipRRect(
-        borderRadius: BorderRadiusGeometry.circular(20),
+        borderRadius: BorderRadiusGeometry.circular(0),
         child: Shimmer(
           enabled: widget.shimmerEnabled,
           child: LiquidGlassLayer(
@@ -41,7 +41,7 @@ class _UploadTileState extends State<UploadTile> with AnimatedPressMixin {
               ).colorScheme.onSurface.withValues(alpha: 0.1),
             ),
             child: LiquidGlass(
-              shape: LiquidRoundedSuperellipse(borderRadius: 20),
+              shape: LiquidRoundedSuperellipse(borderRadius: 4),
               child: Container(
                 height: 300,
                 width: 300,
@@ -53,7 +53,7 @@ class _UploadTileState extends State<UploadTile> with AnimatedPressMixin {
                     ).colorScheme.onSurface.withValues(alpha: 0.2),
                     width: 0.5,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(0),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(

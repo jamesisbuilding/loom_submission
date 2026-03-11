@@ -22,10 +22,22 @@ class $AssetsIconsGen {
   List<AssetGenImage> get values => [newGarment];
 }
 
+class $AssetsLogoGen {
+  const $AssetsLogoGen();
+
+  /// File path: assets/logo/loom_logo.png
+  AssetGenImage get loomLogo =>
+      const AssetGenImage('assets/logo/loom_logo.png');
+
+  /// List of all assets
+  List<AssetGenImage> get values => [loomLogo];
+}
+
 class Assets {
   const Assets._();
 
   static const $AssetsIconsGen icons = $AssetsIconsGen();
+  static const $AssetsLogoGen logo = $AssetsLogoGen();
 }
 
 class AssetGenImage {

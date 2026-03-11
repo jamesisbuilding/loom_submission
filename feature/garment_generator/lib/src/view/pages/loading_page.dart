@@ -112,9 +112,47 @@ class _LoadingPageState extends State<LoadingPage>
                       scale: _scaleAnimation.value,
                       child: Hero(
                         tag: 'garmentImageHero',
+                        transitionOnUserGestures: true,
+                        createRectTween: (begin, end) {
+                          return MaterialRectArcTween(
+                            begin: begin!,
+                            end: end!,
+                          );
+                        },
+                        placeholderBuilder: (context, size, child) {
+                          return Opacity(
+                            opacity: 0.0,
+                            child: SizedBox(
+                              width: size.width,
+                              height: size.height,
+                              child: child,
+                            ),
+                          );
+                        },
+                        flightShuttleBuilder: (
+                          flightContext,
+                          animation,
+                          flightDirection,
+                          fromHeroContext,
+                          toHeroContext,
+                        ) {
+                          final fromHero = fromHeroContext.widget as Hero;
+                          final toHero = toHeroContext.widget as Hero;
+                          final shuttleChild =
+                              flightDirection == HeroFlightDirection.push
+                              ? toHero.child
+                              : fromHero.child;
+                          return FadeTransition(
+                            opacity: CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            ),
+                            child: shuttleChild,
+                          );
+                        },
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(4),
                             boxShadow: hasBgRemovedImage
                                 ? const []
                                 : [
@@ -129,7 +167,7 @@ class _LoadingPageState extends State<LoadingPage>
                                   ],
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(4),
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 450),
                               transitionBuilder: (child, animation) =>

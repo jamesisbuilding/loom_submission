@@ -115,7 +115,7 @@ class _CustomUploadWidgetState extends State<CustomUploadWidget> {
       child: Hero(
         tag: 'garmentImageHero',
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(4),
           child: Image.file(File(_imagePath!), fit: BoxFit.cover),
         ),
       ),
@@ -147,7 +147,7 @@ class _CustomUploadWidgetState extends State<CustomUploadWidget> {
             }
 
             return ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(4),
               child: Column(
                 spacing: 20,
                 mainAxisAlignment: .center,

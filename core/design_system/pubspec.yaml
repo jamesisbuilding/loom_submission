@@ -39,6 +39,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
+    - assets/logo/
   shaders:
     - shaders/gradient.frag
     - shaders/transparent_grain.frag

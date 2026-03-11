@@ -21,7 +21,10 @@ From a UX perspective, the entry screen introduces two custom shaders: a wave-st
 
 When the user taps 'START RESTITCHING', a custom animation is triggered: the background blurs, the text expands, the main button transforms, and the 'Upload Garment Image' button appears with a custom icon (currently reminiscent of a cleaning logo; ultimately, I intend to replace this with an animated GIF showing garments morphing and blending into each other).
 
-At the bottom of this entry screen, I would also add a dedicated section or panel where users can input and view their full specifications—such as body measurements, an image of themselves, and any other information that might be relevant to personalized fashion transformations. This ensures the app can deliver outputs that are uniquely tailored, and brings a more "couture" feel to the experience.
+In this screen I would add a few things; 
+1. At the bottom of this entry screen, I would also add a dedicated section or panel where users can input and view their full specifications—such as body measurements, an image of themselves, and any other information that might be relevant to personalized fashion transformations. This ensures the app can deliver outputs that are uniquely tailored, and brings a more "couture" feel to the experience.
+2. I would add a splash video creating that luxury experience from the get-go
+3. If the user has completed their transformation flow, their history and status of orders are located here
 
 ### 2. Upload Screen 
 Our upload screen holds our 'Upload Garment Image' button, which has a shimmer effect when no image is uploaded. When an image is uploaded from gallery, it updates 
@@ -147,5 +150,10 @@ The full flow I would like to implement
 
 
 ### Additional Design Notes
-If I were to do a full redesign of this app for production, to achieve this luxury look I would lean more into designs from [cosmos](https://www.cosmos.so/home) 
+If I were to do a full redesign of this app for production, to achieve this luxury look I'd lean more into designs from [cosmos](https://www.cosmos.so/home) 
+[Home screen inspiration](https://www.cosmos.so/jamesisbuilding/home-screen-inspiration)
+[Loading screen inspiration](https://www.cosmos.so/jamesisbuilding/loading-screen-inspirati)
+[Results Screen Inspiration](https://www.cosmos.so/jamesisbuilding/results-screen-inspirati)
+
+
 and implement clearer animations from [60fps](https://60fps.design/)
