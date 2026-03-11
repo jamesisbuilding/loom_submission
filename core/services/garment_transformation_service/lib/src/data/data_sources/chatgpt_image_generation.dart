@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:garment_transformation_service/garment_transformation_service.dart';
 import 'package:mime/mime.dart';
 
 import '../prompts/garment_analysis_prompt.dart';
-import '../prompts/garment_transformation_prompt.dart';
 
 class ChatGptImageGeneration implements GarmentTransformationDataSource {
   const ChatGptImageGeneration({
@@ -36,6 +36,22 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
   String _keySuffix(String key) {
     if (key.length <= 6) return '***';
     return '***${key.substring(key.length - 6)}';
+  }
+
+  Future<String> _persistGeneratedImage({
+    required Uint8List bytes,
+    required String ideaName,
+  }) async {
+    final safeName = ideaName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    final file = File(
+      '${Directory.systemTemp.path}/loom_openai_${safeName}_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
   }
 
   String? get _resolvedApiKey {
@@ -217,40 +233,64 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
     }
 
     try {
+      final originalBytes = await file.readAsBytes();
+      final mimeType = lookupMimeType(originalGarmentImage) ?? 'image/png';
+      final ext = mimeType.split('/').last.toLowerCase();
+      final fileName = 'garment_input.$ext';
       final variations = garmentIdeas.variations.take(3).toList();
       print(
         '[ChatGptImageGeneration.generateGarmentTransformations] Starting batch '
-        'count=${variations.length}, model=dall-e-3, key=${_keySuffix(key)}',
+        'count=${variations.length}, model=dall-e-2 (/images/edits), key=${_keySuffix(key)}',
       );
 
       final futures = variations.map((idea) async {
         final prompt = StringBuffer()
-          ..writeln(garmentTransformationPromptThin.trim())
-          ..writeln()
-          ..writeln('Name: ${idea.name}')
-          ..writeln('Description: ${idea.description}')
           ..writeln(
-            'Return a photorealistic single product shot on a clean neutral background.',
+            'You are editing the uploaded garment photo into a redesigned output.',
+          )
+          ..writeln('Target redesign name: ${idea.name}')
+          ..writeln('Target redesign description: ${idea.description}')
+          ..writeln(
+            'Create a clearly different silhouette and construction from the source image.',
+          )
+          ..writeln(
+            'Preserve key material cues (fabric texture, color family, visual identity) '
+            'so it is recognizably derived from the original garment.',
+          )
+          ..writeln(
+            'The output MUST be an edited variant of the provided source image, '
+            'not a generic unrelated garment and not an unchanged copy.',
+          )
+          ..writeln(
+            'Do NOT return the same original garment unchanged.',
+          )
+          ..writeln(
+            'Return one photorealistic product shot on a clean neutral studio background.',
           );
-
-        final payload = {
-          'model': 'dall-e-3',
-          'prompt': prompt.toString(),
-          'size': '1024x1024',
-          'quality': 'standard',
-          'n': 1,
-          'response_format': 'url',
-        };
 
         try {
           print(
             '[ChatGptImageGeneration.generateGarmentTransformations] Requesting image '
             'for idea="${idea.name}" prompt=${_truncate(prompt.toString(), max: 260)}',
           );
-          final response = await _postJson(
-            path: '/images/generations',
+          final response = await _postMultipart(
+            path: '/images/edits',
             apiKey: key,
-            payload: payload,
+            fields: {
+              'model': 'dall-e-2',
+              'prompt': prompt.toString(),
+              'size': '1024x1024',
+              'n': '1',
+              'response_format': 'b64_json',
+            },
+            files: [
+              _MultipartFile(
+                fieldName: 'image',
+                fileName: fileName,
+                contentType: mimeType,
+                bytes: originalBytes,
+              ),
+            ],
           );
 
           print(
@@ -267,33 +307,54 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
             return GarmentTransformationModel(
               image: '',
               description: idea.description,
-              imageURL: originalGarmentImage,
+              imageURL: '',
             );
           }
 
           final decoded = jsonDecode(response.body) as Map<String, dynamic>;
           final data = decoded['data'] as List<dynamic>?;
-          final imageUrl = data != null && data.isNotEmpty
-              ? (data.first as Map<String, dynamic>)['url'] as String? ?? ''
+          final b64Image = data != null && data.isNotEmpty
+              ? (data.first as Map<String, dynamic>)['b64_json'] as String? ?? ''
               : '';
 
-          if (imageUrl.isEmpty) {
+          if (b64Image.isEmpty) {
             print(
               '[ChatGptImageGeneration.generateGarmentTransformations] '
-              'No image URL returned for idea "${idea.name}".',
+              'No b64_json image returned for idea "${idea.name}".',
             );
-          } else {
-            print(
-              '[ChatGptImageGeneration.generateGarmentTransformations] '
-              'Received URL for "${idea.name}": ${_truncate(imageUrl, max: 180)}',
+            return GarmentTransformationModel(
+              image: '',
+              description: idea.description,
+              imageURL: '',
             );
           }
 
-          return GarmentTransformationModel(
-            image: imageUrl,
-            description: idea.description,
-            imageURL: imageUrl.isNotEmpty ? imageUrl : originalGarmentImage,
-          );
+          try {
+            final imageBytes = base64Decode(b64Image);
+            final localImagePath = await _persistGeneratedImage(
+              bytes: imageBytes,
+              ideaName: idea.name,
+            );
+            print(
+              '[ChatGptImageGeneration.generateGarmentTransformations] '
+              'Saved generated image for "${idea.name}" to $localImagePath',
+            );
+            return GarmentTransformationModel(
+              image: localImagePath,
+              description: idea.description,
+              imageURL: localImagePath,
+            );
+          } catch (e, st) {
+            print(
+              '[ChatGptImageGeneration.generateGarmentTransformations] '
+              'Failed to decode/save b64 image for "${idea.name}": $e\n$st',
+            );
+            return GarmentTransformationModel(
+              image: '',
+              description: idea.description,
+              imageURL: '',
+            );
+          }
         } catch (e, st) {
           print(
             '[ChatGptImageGeneration.generateGarmentTransformations] '
@@ -302,13 +363,15 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
           return GarmentTransformationModel(
             image: '',
             description: idea.description,
-            imageURL: originalGarmentImage,
+            imageURL: '',
           );
         }
       }).toList();
 
       final generated = await Future.wait(futures);
-      return GarmentTransformationCollection(transformedGarments: generated);
+      return GarmentTransformationCollection(
+        transformedGarments: generated,
+      );
     } catch (e, st) {
       print(
         '[ChatGptImageGeneration.generateGarmentTransformations] '
@@ -339,8 +402,72 @@ class ChatGptImageGeneration implements GarmentTransformationDataSource {
       client.close(force: true);
     }
   }
+
+  Future<_HttpResult> _postMultipart({
+    required String path,
+    required String apiKey,
+    required Map<String, String> fields,
+    required List<_MultipartFile> files,
+  }) async {
+    final uri = Uri.parse('$baseUrl$path');
+    final client = HttpClient();
+    final boundary = '----loomBoundary${DateTime.now().millisecondsSinceEpoch}';
+
+    try {
+      final request = await client.postUrl(uri);
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'multipart/form-data; boundary=$boundary',
+      );
+
+      void writeString(String value) {
+        request.add(utf8.encode(value));
+      }
+
+      for (final entry in fields.entries) {
+        writeString('--$boundary\r\n');
+        writeString(
+          'Content-Disposition: form-data; name="${entry.key}"\r\n\r\n',
+        );
+        writeString('${entry.value}\r\n');
+      }
+
+      for (final file in files) {
+        writeString('--$boundary\r\n');
+        writeString(
+          'Content-Disposition: form-data; name="${file.fieldName}"; '
+          'filename="${file.fileName}"\r\n',
+        );
+        writeString('Content-Type: ${file.contentType}\r\n\r\n');
+        request.add(file.bytes);
+        writeString('\r\n');
+      }
+
+      writeString('--$boundary--\r\n');
+
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+      return _HttpResult(statusCode: response.statusCode, body: body);
+    } finally {
+      client.close(force: true);
+    }
+  }
 }
 
+class _MultipartFile {
+  const _MultipartFile({
+    required this.fieldName,
+    required this.fileName,
+    required this.contentType,
+    required this.bytes,
+  });
+
+  final String fieldName;
+  final String fileName;
+  final String contentType;
+  final Uint8List bytes;
+}
 class _HttpResult {
   const _HttpResult({required this.statusCode, required this.body});
 

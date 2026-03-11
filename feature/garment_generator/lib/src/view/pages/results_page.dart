@@ -52,18 +52,17 @@ class _ResultsPageState extends State<ResultsPage> {
             AnimatedBackground(colorsListenable: _backgroundColors),
             BlocBuilder<GarmentGeneratorBloc, GarmentGeneratorState>(
               builder: (context, state) {
+                final originalImagePath = state.uploadedGarmentImage;
                 final urls = state.transformations?.transformedGarments
-                        .map((e) => e.imageURL)
-                        .where((e) => e.isNotEmpty)
-                        .toList() ??
-                    const <String>[];
+                        .map((e) => e.imageURL).toList();
+                        // .where((e) => e.isNotEmpty)
+                        // .where((e) => originalImagePath == null || e != originalImagePath)
+                        // .toList() ??
+                    // const <String>[];
 
-                return Hero(
-                  tag: 'garmentImageHero',
-                  child: FadezCarousel(
-                    imageUrls: urls,
-                    backgroundColor: Colors.transparent,
-                  ),
+                return FadezCarousel(
+                  imageUrls: urls ?? [],
+                  backgroundColor: Colors.transparent,
                 );
               },
             ),
