@@ -57,3 +57,6 @@ app/assets/env/app.env
 .env
 .env*
 
+### Local notes / interview docs
+architecture-review.md
+
